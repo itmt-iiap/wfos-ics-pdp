@@ -5,6 +5,7 @@ import csw.params.core.models.ArrayData
 import csw.params.core.models.ObsId
 
 object PactInfo {
+
   // Physical movement constraints
   val maxExtensionKey: Key[Double]    = KeyType.DoubleKey.make("maxExtension")
   val maxExtension: Parameter[Double] = maxExtensionKey.set(500.0)
@@ -12,6 +13,7 @@ object PactInfo {
   val minExtensionKey: Key[Double]    = KeyType.DoubleKey.make("minExtension")
   val minExtension: Parameter[Double] = minExtensionKey.set(0.0)
 
+  // Steps
   val movementStepKey: Key[Double]    = KeyType.DoubleKey.make("movementStep")
   val movementStep: Parameter[Double] = movementStepKey.set(50.0)
 
@@ -19,15 +21,9 @@ object PactInfo {
   val targetPositionKey: Key[Double]    = KeyType.DoubleKey.make("targetPosition")
   val targetPosition: Parameter[Double] = targetPositionKey.set(500.0)
 
+  // Current Position
   val currentPositionKey: Key[Double]    = KeyType.DoubleKey.make("currentPosition")
   var currentPosition: Parameter[Double] = currentPositionKey.set(0.0)
-
-  // Predefined positions
-  // val inPositionKey: Key[Double]    = KeyType.DoubleKey.make("inPosition")
-  // val inPosition: Parameter[Double] = inPositionKey.set(250.0)
-
-  // val outPositionKey: Key[Double]    = KeyType.DoubleKey.make("outPosition")
-  // val outPosition: Parameter[Double] = outPositionKey.set(0.0)
 
   // Retry count
   val retryCountKey: Key[Int]    = KeyType.IntKey.make("retryCount")

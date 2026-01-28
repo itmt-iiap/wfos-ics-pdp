@@ -7,11 +7,10 @@ import csw.framework.scaladsl.ComponentHandlers
 import csw.location.api.models.TrackingEvent
 import csw.params.commands.CommandResponse._
 import csw.params.core.models.{Id}
-import csw.params.commands.CommandIssue.{ParameterValueOutOfRangeIssue, WrongCommandTypeIssue, UnsupportedCommandIssue}
-import csw.params.commands.{ControlCommand, CommandName, Observe, Setup}
+import csw.params.commands.CommandIssue.{ParameterValueOutOfRangeIssue, UnsupportedCommandIssue}
+import csw.params.commands.{ControlCommand, Setup}
 
 import csw.time.core.models.UTCTime
-import csw.params.core.generics.Parameter
 
 import scala.concurrent.{ExecutionContextExecutor}
 import wfos.pacthcd.PactInfo
@@ -47,35 +46,48 @@ class PacthcdHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswContex
   }
 
   private def onSetup(runId: Id, setup: Setup): SubmitResponse = {
-    println(s"PactHcd : Received command - OnSubmit123")
+    println(s"PactHcd : Received command - OnSubmit - Getting called")
     log.info(s"PactHcd : Executing the received command with runId - $runId")
 
-    val delay: Int                        = 1000
-    val targetPosition: Parameter[Double] = setup(PactInfo.targetPositionKey)
+    val step  = PactInfo.movementStep.head
+    val min   = PactInfo.minExtension.head
+    val max   = PactInfo.maxExtension.head
+    val delay = 50 // ms per step (movement delay)
 
-    log.info(s"PactHcd : Rod is currently at ${PactInfo.currentPosition.head}mm")
+    def moveActuator(target: Double): Unit = {
+      var pos = PactInfo.currentPosition.head
+      while (Math.abs(pos - target) > step) {
+        pos =
+          if (pos < target) Math.min(pos + step, max)
+          else Math.max(pos - step, min)
 
-    while (PactInfo.currentPosition.head != targetPosition.head) {
-      PactInfo.currentPosition = PactInfo.currentPositionKey.set(
-        if (PactInfo.currentPosition.head < targetPosition.head)
-          PactInfo.currentPosition.head + 50 // Move forward by 50 units
-        else
-          PactInfo.currentPosition.head - 50 // Move backward by 50 units
-      )
+        PactInfo.currentPosition = PactInfo.currentPositionKey.set(pos)
 
-      if (PactInfo.currentPosition.head % 10 == 0) {
-        val message = s"PactHcd : Moving rod to ${PactInfo.currentPosition.head}mm"
-        // Create and publish the event
-        val event = createMovementEvent(message)
+        val message = s"PactHcd : Moving actuator to $pos mm"
+        val event   = createMovementEvent(message)
         publisher.publish(event)
+
+        Thread.sleep(delay)
       }
-      Thread.sleep(delay)
+
+      // snap to final target
+      PactInfo.currentPosition = PactInfo.currentPositionKey.set(target)
+      log.info(s"PactHcd : Actuator reached target position ${PactInfo.currentPosition.head} mm")
     }
 
-    val stage  = PactInfo.stageKey.set("Setup")
-    val status = PactInfo.statusKey.set("Completed")
-    val event  = SystemEvent(componentInfo.prefix, EventName("PactHcd_status")).madd(stage, status)
-    publisher.publish(event)
+    val current = PactInfo.currentPosition.head
+    log.info(s"PactHcd : Actuator is currently at $current mm")
+
+    // 1. Move to in-position (500mm)
+    moveActuator(500)
+
+    // 2. Wait 2 seconds
+    log.info("PactHcd : Waiting for 2 seconds at in-position before moving back")
+    Thread.sleep(2000)
+
+    // 3. Move back to out-position (0mm)
+    moveActuator(0)
+
     Completed(runId)
   }
 

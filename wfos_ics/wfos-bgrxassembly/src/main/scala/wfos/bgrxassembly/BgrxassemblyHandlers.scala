@@ -213,7 +213,7 @@ class BgrxassemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswC
         // log.info(s"Received PactMovement Event: Pacthcd: Moving rod to${PactInfo.out.head}")
         // Handle the RgripRotationEvent here
         // log.info(s"Recieved PactMovement Event - First log");
-        log.info(s"Received PactMovement Event: Pacthcd: Moving rod to ${PactInfo.currentPosition.head}")
+        log.info(s"Received PactMovement Event: Pacthcd: Moving actuator to ${PactInfo.currentPosition.head}")
       }
     )
 
@@ -225,7 +225,7 @@ class BgrxassemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswC
 
   private def onSetup(runId: Id, setup: Setup): SubmitResponse = {
     moveRgripHcd(runId, setup)
-    // moveLgmHcd(runId)
+    // movePactHcd(runId)
     Started(runId)
   }
 
